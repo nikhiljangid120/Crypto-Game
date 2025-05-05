@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Crash - Deluxe</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+        :root {
+            --bg-color: #1a1a2e;
+            --primary-color: #16213e;
+            --secondary-color: #0f3460;
+            --accent-color: #e94560;
+            --highlight-color: #53a8b6;
+            --text-color: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --font-family: 'Poppins', sans-serif;
+            --green-glow: #28a745;
+            --red-glow: #dc3545;
+            --yellow-glow: #ffc107;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden; /* Prevent scrollbars from body */
+        }
+
+        .game-container {
+            background-color: var(--primary-color);
+            padding: 30px 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px; /* Space between elements */
+        }
+
+        h1 {
+            color: var(--highlight-color);
+            margin-bottom: 10px; /* Reduced margin */
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .display-area {
+            background-color: var(--secondary-color);
+            padding: 25px;
+            border-radius: 10px;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .status-display {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            transition: color 0.3s ease;
+            min-height: 1.5em; /* Prevent layout shift */
+        }
+
+        .multiplier-display {
+            font-size: 4em; /* Larger multiplier */
+            font-weight: 700;
+            color: var(--highlight-color);
+            margin-bottom: 20px;
+            line-height: 1;
+            transition: color 0.3s ease, transform 0.1s ease;
+            /* Prevents layout shift when digits change width */
+            font-variant-numeric: tabular-nums;
+            text-shadow: 0 0 5px rgba(83, 168, 182, 0.5); /* Subtle glow */
+        }
+
+        /* Status-specific styles */
+        body.state-betting .status-display { color: var(--yellow-glow); }
+        body.state-running .status-display { color: var(--green-glow); }
+        body.state-crashed .status-display { color: var(--red-glow); }
+
+        body.state-running .display-area {
+             box-shadow: 0 0 15px var(--green-glow);
+        }
+         body.state-crashed .display-area {
+             box-shadow: 0 0 15px var(--red-glow);
+        }
+         body.state-betting .display-area {
+             box-shadow: 0 0 15px var(--yellow-glow);
+        }
+
+        body.state-running .multiplier-display {
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+
+
+        #cashout {
+            background: linear-gradient(135deg, var(--accent-color), #c4304a);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #cashout:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(233, 69, 96, 0.6);
+        }
+
+        #cashout:active:not(:disabled) {
+            transform: translateY(1px);
+            box-shadow: 0 3px 10px rgba(233, 69, 96, 0.5);
+        }
+
+        #cashout:disabled {
+            background: #555;
+            color: #999;
+            cursor: not-allowed;
+            box-shadow: none;
+            opacity: 0.7;
+        }
+
+        .log-area {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 150px; /* Limit height and make scrollable */
+            overflow-y: auto;
+            text-align: left;
+            font-size: 0.9em;
+             border: 1px solid var(--secondary-color);
+        }
+
+        .log-area p {
+            margin: 5px 0;
+            color: var(--text-muted);
+            word-wrap: break-word;
+             border-bottom: 1px dashed var(--secondary-color);
+             padding-bottom: 5px;
+        }
+         .log-area p:last-child {
+             border-bottom: none;
+             padding-bottom: 0;
+         }
+
+         .log-area p .log-time {
+             color: var(--highlight-color);
+             margin-right: 8px;
+             font-weight: 600;
+         }
+
+        /* Scrollbar styling (optional, works in WebKit browsers) */
+        .log-area::-webkit-scrollbar {
+            width: 8px;
+        }
+        .log-area::-webkit-scrollbar-track {
+            background: var(--secondary-color);
+            border-radius: 4px;
+        }
+        .log-area::-webkit-scrollbar-thumb {
+            background-color: var(--highlight-color);
+            border-radius: 4px;
+             border: 2px solid var(--secondary-color);
+        }
+
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Crypto Crash</h1>
+
+        <div class="display-area">
+             <p class="status-display"><span id="status">Connecting...</span></p>
+            <p class="multiplier-display"><span id="multiplier">1.00</span>x</p>
+        </div>
+
+        <button id="cashout" disabled>Cash Out</button>
+
+        <div class="log-area" id="log">
+            </div>
+    </div>
+
+    <script>
+        // Ensure Socket.IO client is loaded before connecting
+        // Use environment variables or configuration for the server URL in production
+        const SOCKET_SERVER_URL = 'http://localhost:3000';
+        const socket = io(SOCKET_SERVER_URL);
+
+        // Replace with actual player ID retrieval mechanism (e.g., from auth context)
+        const playerId = '68187f4cec9313b87dbd6ee5';
+        let currentRoundId = null;
+
+        // Cache DOM elements
+        const statusEl = document.getElementById('status');
+        const multiplierEl = document.getElementById('multiplier');
+        const cashoutBtn = document.getElementById('cashout');
+        const logDiv = document.getElementById('log');
+        const bodyEl = document.body; // To add state classes
+
+        // --- Helper Functions ---
+        function formatMultiplier(value) {
+            // Ensure value is a number, default to 1.00 if not valid
+            const num = parseFloat(value);
+            return isNaN(num) ? '1.00' : num.toFixed(2);
+        }
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const p = document.createElement('p');
+            p.innerHTML = `<span class="log-time">[${timestamp}]</span> ${message}`;
+            logDiv.prepend(p); // Add new logs to the top
+
+             // Optional: Limit the number of log entries
+             const maxLogEntries = 50;
+             while (logDiv.children.length > maxLogEntries) {
+                 logDiv.removeChild(logDiv.lastChild);
+             }
+
+             // Scroll to top after adding message
+             logDiv.scrollTop = 0;
+        }
+
+         function setGameState(state) {
+            // Remove existing state classes
+            bodyEl.classList.remove('state-betting', 'state-running', 'state-crashed', 'state-connecting');
+            // Add the new state class
+            if (state) {
+                bodyEl.classList.add(`state-${state}`);
+            }
+        }
+
+        // --- Socket Event Handlers ---
+        socket.on('connect', () => {
+            statusEl.textContent = 'Connected. Waiting for round...';
+            log('Connected to server.');
+            setGameState('betting'); // Assume betting starts soon or is in progress
+        });
+
+        socket.on('disconnect', () => {
+            statusEl.textContent = 'Disconnected';
+            cashoutBtn.disabled = true;
+            multiplierEl.textContent = '---';
+            log('Disconnected from server.');
+             setGameState(null); // Clear state
+        });
+
+         socket.on('connect_error', (err) => {
+            statusEl.textContent = 'Connection Error';
+            log(`Connection Error: ${err.message}`);
+            setGameState(null); // Clear state
+        });
+
+
+        socket.on('betting_start', (data) => {
+            statusEl.textContent = 'Betting Phase - Place your bets!';
+            multiplierEl.textContent = formatMultiplier(1.00);
+            cashoutBtn.disabled = true;
+            currentRoundId = data.round_id; // Store round ID early if needed for betting logic (not shown here)
+            log(`Betting started for round ${data.round_id}`);
+            setGameState('betting');
+        });
+
+        socket.on('round_start', (data) => {
+            statusEl.textContent = 'Round Running...';
+            cashoutBtn.disabled = false; // Enable cashout ONLY when round starts
+            currentRoundId = data.round_id; // Ensure round ID is set for cashout
+            multiplierEl.textContent = formatMultiplier(1.00); // Start multiplier visually at 1.00
+            log(`Round ${data.round_id} started!`);
+            setGameState('running');
+        });
+
+        socket.on('multiplier_update', (data) => {
+             // Only update if the round is running visually
+             if (bodyEl.classList.contains('state-running')) {
+                multiplierEl.textContent = formatMultiplier(data.multiplier);
+             }
+        });
+
+        socket.on('player_cashout', (data) => {
+            // Highlight own cashout differently if needed
+            const isOwnCashout = data.player_id === playerId;
+            const message = `${isOwnCashout ? 'You' : `Player ${data.player_id.substring(0, 6)}...`} cashed out at ${formatMultiplier(data.multiplier)}x for $${data.payout_usd.toFixed(2)}`;
+            log(message);
+
+            // If it's the current player who cashed out, disable the button
+             if (isOwnCashout) {
+                 cashoutBtn.disabled = true;
+                 statusEl.textContent = `Cashed Out at ${formatMultiplier(data.multiplier)}x!`;
+                 // Optional: Change button text
+                 // cashoutBtn.textContent = "Cashed Out";
+             }
+        });
+
+        socket.on('round_crash', (data) => {
+            statusEl.textContent = `Crashed at ${formatMultiplier(data.crash_point)}x`;
+            multiplierEl.textContent = formatMultiplier(data.crash_point);
+            cashoutBtn.disabled = true;
+            // Reset button text if it was changed on cashout
+            // cashoutBtn.textContent = "Cash Out";
+            log(`Round crashed at ${formatMultiplier(data.crash_point)}x`);
+            setGameState('crashed');
+            // currentRoundId = null; // Clear round ID after crash if needed
+        });
+
+        // --- UI Event Handlers ---
+        cashoutBtn.addEventListener('click', () => {
+            if (!currentRoundId) {
+                log("Error: Cannot cash out, no active round ID.");
+                return;
+            }
+            // Optimistically disable button immediately to prevent double clicks
+             cashoutBtn.disabled = true;
+             // Optional: Change button text while sending
+             // cashoutBtn.textContent = "Cashing out...";
+            socket.emit('cashout', { player_id: playerId, round_id: currentRoundId });
+            log("Cashout signal sent..."); // Give feedback that the button was pressed
+        });
+
+        // Initial state
+        setGameState('connecting'); // Initial state before connection
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+{
+    "info": {
+      "name": "Crypto Crash API",
+      "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "description": "API endpoints for Crypto Crash game",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Place Bet",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"player_id\": \"68187f4cec9313b87dbd6ee5\", \"usd_amount\": 10, \"currency\": \"BTC\"}"
+          },
+          "url": {
+            "raw": "http://localhost:3000/bets",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "3000",
+            "path": ["bets"]
+          }
+        },
+        "response": []
+      },
+      {
+        "name": "Get Wallet",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": {
+            "raw": "http://localhost:3000/wallet/68187f4cec9313b87dbd6ee5",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "3000",
+            "path": ["wallet", "68187f4cec9313b87dbd6ee5"]
+          }
+        },
+        "response": []
+      }
+    ]
+  }
