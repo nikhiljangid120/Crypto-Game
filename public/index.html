@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto Crash - Deluxe</title>
+    <title>Crypto Crash - Game</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
@@ -82,7 +82,6 @@
             text-shadow: 0 0 5px rgba(83, 168, 182, 0.5); /* Subtle glow */
         }
 
-        /* Status-specific styles */
         body.state-betting .status-display { color: var(--yellow-glow); }
         body.state-running .status-display { color: var(--green-glow); }
         body.state-crashed .status-display { color: var(--red-glow); }
@@ -169,7 +168,6 @@
              font-weight: 600;
          }
 
-        /* Scrollbar styling (optional, works in WebKit browsers) */
         .log-area::-webkit-scrollbar {
             width: 8px;
         }
@@ -207,17 +205,15 @@
         const socket = io(SOCKET_SERVER_URL);
 
         // Replace with actual player ID retrieval mechanism (e.g., from auth context)
-        const playerId = '68187f4cec9313b87dbd6ee5';
+        const playerId = 'Enter your new Generated Player ID';
         let currentRoundId = null;
 
-        // Cache DOM elements
         const statusEl = document.getElementById('status');
         const multiplierEl = document.getElementById('multiplier');
         const cashoutBtn = document.getElementById('cashout');
         const logDiv = document.getElementById('log');
         const bodyEl = document.body; // To add state classes
 
-        // --- Helper Functions ---
         function formatMultiplier(value) {
             // Ensure value is a number, default to 1.00 if not valid
             const num = parseFloat(value);
@@ -228,32 +224,27 @@
             const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             const p = document.createElement('p');
             p.innerHTML = `<span class="log-time">[${timestamp}]</span> ${message}`;
-            logDiv.prepend(p); // Add new logs to the top
+            logDiv.prepend(p); 
 
-             // Optional: Limit the number of log entries
              const maxLogEntries = 50;
              while (logDiv.children.length > maxLogEntries) {
                  logDiv.removeChild(logDiv.lastChild);
              }
 
-             // Scroll to top after adding message
              logDiv.scrollTop = 0;
         }
 
          function setGameState(state) {
-            // Remove existing state classes
             bodyEl.classList.remove('state-betting', 'state-running', 'state-crashed', 'state-connecting');
-            // Add the new state class
             if (state) {
                 bodyEl.classList.add(`state-${state}`);
             }
         }
 
-        // --- Socket Event Handlers ---
         socket.on('connect', () => {
             statusEl.textContent = 'Connected. Waiting for round...';
             log('Connected to server.');
-            setGameState('betting'); // Assume betting starts soon or is in progress
+            setGameState('betting'); 
         });
 
         socket.on('disconnect', () => {
@@ -261,7 +252,7 @@
             cashoutBtn.disabled = true;
             multiplierEl.textContent = '---';
             log('Disconnected from server.');
-             setGameState(null); // Clear state
+             setGameState(null); 
         });
 
          socket.on('connect_error', (err) => {
@@ -275,7 +266,7 @@
             statusEl.textContent = 'Betting Phase - Place your bets!';
             multiplierEl.textContent = formatMultiplier(1.00);
             cashoutBtn.disabled = true;
-            currentRoundId = data.round_id; // Store round ID early if needed for betting logic (not shown here)
+            currentRoundId = data.round_id;
             log(`Betting started for round ${data.round_id}`);
             setGameState('betting');
         });
@@ -283,14 +274,13 @@
         socket.on('round_start', (data) => {
             statusEl.textContent = 'Round Running...';
             cashoutBtn.disabled = false; // Enable cashout ONLY when round starts
-            currentRoundId = data.round_id; // Ensure round ID is set for cashout
+            currentRoundId = data.round_id;
             multiplierEl.textContent = formatMultiplier(1.00); // Start multiplier visually at 1.00
             log(`Round ${data.round_id} started!`);
             setGameState('running');
         });
 
         socket.on('multiplier_update', (data) => {
-             // Only update if the round is running visually
              if (bodyEl.classList.contains('state-running')) {
                 multiplierEl.textContent = formatMultiplier(data.multiplier);
              }
@@ -315,30 +305,23 @@
             statusEl.textContent = `Crashed at ${formatMultiplier(data.crash_point)}x`;
             multiplierEl.textContent = formatMultiplier(data.crash_point);
             cashoutBtn.disabled = true;
-            // Reset button text if it was changed on cashout
-            // cashoutBtn.textContent = "Cash Out";
             log(`Round crashed at ${formatMultiplier(data.crash_point)}x`);
             setGameState('crashed');
-            // currentRoundId = null; // Clear round ID after crash if needed
         });
 
-        // --- UI Event Handlers ---
         cashoutBtn.addEventListener('click', () => {
             if (!currentRoundId) {
                 log("Error: Cannot cash out, no active round ID.");
                 return;
             }
-            // Optimistically disable button immediately to prevent double clicks
+            // disable button immediately to prevent double clicks
              cashoutBtn.disabled = true;
              // Optional: Change button text while sending
              // cashoutBtn.textContent = "Cashing out...";
             socket.emit('cashout', { player_id: playerId, round_id: currentRoundId });
-            log("Cashout signal sent..."); // Give feedback that the button was pressed
+            log("Cashout signal sent..."); // Giving feedback that the button was pressed
         });
-
-        // Initial state
-        setGameState('connecting'); // Initial state before connection
-
+        setGameState('connecting'); 
     </script>
 </body>
 </html>
