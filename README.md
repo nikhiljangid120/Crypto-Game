@@ -1,6 +1,6 @@
 Crypto Crash
 ============ 
-
+ 
 Crypto Crash is a real-time, cryptocurrency-themed crash gambling game built with Node.js, Express, MongoDB, and Socket.IO. Players place bets in USD, converted to BTC or ETH using live CoinGecko API prices, and aim to cash out before a randomly determined crash point. The game features a provably fair algorithm, real-time WebSocket updates, and a responsive frontend UI.
 
 Features
